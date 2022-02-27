@@ -1,3 +1,3 @@
 #!/bin/bash
-cp tx.py ~/.local/bin/tx
+cp tau.py ~/.local/bin/tau
 

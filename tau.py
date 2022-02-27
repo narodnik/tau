@@ -3,15 +3,25 @@
 import os
 import argparse
 import datetime
+import hashlib
 import pprint
-import requests
-import json
+import pickle
 import sys
 from decimal import Decimal as Real
 
 def error(message):
     print(f"Error: {message}", file=sys.stderr)
     sys.exit(-1)
+
+def make_path(config_path, subdirs=None):
+    if subdirs is not None:
+        assert isinstance(subdirs, str)
+        config_path = os.path.join(config_path, subdirs)
+
+    try:
+        os.makedirs(config_path)
+    except FileExistsError:
+        pass
 
 # Is this string an integer number
 def is_integer(s):
@@ -62,13 +72,66 @@ def convert_due_date(date):
 
     return due_date
 
+class Config:
+
+    def __init__(self, config_path):
+        # Save the config path
+        self.path = config_path
+
+    def load(self):
+        # Load the configuration from f
+        try:
+            with open(self.filename(), "rb") as f:
+                self._load(f)
+        except FileNotFoundError:
+            # File doesn't exist
+            # TODO: Create empty file
+            pass
+
+    def _load(self, f):
+        pass
+
+    def filename(self):
+        return os.path.join(self.path, "tk.toml")
+
+class Settings:
+
+    def __init__(self, config):
+        self.config = config
+
 class TaskInfo:
 
-    def __init__(self, assign, project, due, rank):
+    def __init__(self, assign, project, due, rank, settings):
         self.assign = assign
         self.project = project
         self.due = due
         self.rank = rank
+
+        self.settings = settings
+
+    @staticmethod
+    def data_path(settings, tk_hash):
+        path = os.path.join(settings.config.path,
+                            f"task/{tk_hash}")
+        return path
+
+    def path(self):
+        return TaskInfo.data_path(self.settings, self.tk_hash())
+
+    def save(self):
+        with open(self.path(), "wb") as f:
+            pickle.dump(self, f)
+
+    @staticmethod
+    def load(self, tk_hash, settings):
+        path = TaskInfo.data_path(settings, tk_hash)
+        with open(path, "rb") as f:
+            return pickle.load(f)
+    
+    def tk_hash(self):
+        rep = repr(self).encode('utf-8')
+        result = hashlib.sha256(rep).hexdigest()
+        return result
 
     def __repr__(self):
         return (
@@ -87,10 +150,12 @@ def cmd_add(args, settings):
 
     # TODO: created_at attribute
 
-    task_info = TaskInfo(args.assign, args.project, due, args.rank)
-    print(f"{task_info}")
+    task_info = TaskInfo(args.assign, args.project, due, args.rank,
+                         settings)
+    task_info.save()
+    print(f"{task_info} {task_info.tk_hash()}")
 
-def arg_parser(client):
+def run_app():
     parser = argparse.ArgumentParser(prog='tx',
         usage='%(prog)s [commands]',
         description="Collective task management cli"
@@ -154,102 +219,36 @@ def arg_parser(client):
     #       [settings]
     #       custom_editor="nvim"    # Forget this for now
     # 4. Load config into Settings class
-    settings = None
+
+    # Config file settings are not implemented yet.
+    # Stub
+    config = None
 
     try:
         config_path = os.environ["TX_CONFIG_PATH"]
     except KeyError:
-        config_path = os.path.expanduser("~/.config/tx/")
+        config_path = os.path.expanduser("~/.config/tk/")
 
-    try:
-        os.makedirs(config_path)
-    except FileExistsError:
-        pass
+    config = Config(config_path)
+    config.load()
+    settings = Settings(config)
 
+    make_path(config_path)
+    make_path(config_path, "task")
+
+    try: 
+        # Check the subcommand was actually specified
+        args.func
+    except AttributeError:
+        # No subcommand specified, print the help and exit
+        parser.print_help()
+        return
+
+    # Actually run the command
     args.func(args, settings)
 
-    #if args.key:
-    #    try:
-    #        print("Attemping to generate a new key pair...")
-    #        client.key_gen(client.payload)
-    #    except Exception:
-    #        raise
-
-    #if args.info:
-    #    try:
-    #        print("Info was entered")
-    #        client.get_info(client.payload)
-    #        print("Requesting daemon info...")
-    #    except Exception:
-    #        raise
-
-    #if args.stop:
-    #    try:
-    #        print("Stop was entered")
-    #        client.stop(client.payload)
-    #        print("Sending a stop signal...")
-    #    except Exception:
-    #        raise
-
-    #if args.hello:
-    #    try:
-    #        print("Hello was entered")
-    #        client.say_hello(client.payload)
-    #    except Exception:
-    #        raise
-
-
-class DarkClient:
-    # TODO: generate random ID (4 byte unsigned int) (rand range 0 - max size
-    # uint32
-    def __init__(self):
-        self.url = "http://localhost:8000/"
-        self.payload = {
-            "method": [],
-            "params": [],
-            "jsonrpc": [],
-            "id": [],
-        }
-
-    def key_gen(self, payload):
-        payload['method'] = "key_gen"
-        payload['jsonrpc'] = "2.0"
-        payload['id'] = "0"
-        key = self.__request(payload)
-        print(key)
-
-    def get_info(self, payload):
-        payload['method'] = "get_info"
-        payload['jsonrpc'] = "2.0"
-        payload['id'] = "0"
-        info = self.__request(payload)
-        print(info)
-
-    def stop(self, payload):
-        payload['method'] = "stop"
-        payload['jsonrpc'] = "2.0"
-        payload['id'] = "0"
-        stop = self.__request(payload)
-        print(stop)
-
-    def say_hello(self, payload):
-        payload['method'] = "say_hello"
-        payload['jsonrpc'] = "2.0"
-        payload['id'] = "0"
-        hello = self.__request(payload)
-        print(hello)
-
-    def __request(self, payload):
-        response = requests.post(self.url, json=payload).json()
-        # print something better
-        # parse into data structure 
-        print(response)
-        assert response["jsonrpc"]
-
-    
 if __name__ == "__main__":
-    client = DarkClient()
-    arg_parser(client)
+    run_app()
     sys.exit(0)
 
     #rpc()

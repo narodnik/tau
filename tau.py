@@ -8,6 +8,10 @@ import pprint
 import pickle
 import sys
 from decimal import Decimal as Real
+from tabulate import tabulate
+
+# TODO: Add logger for debug messages.
+# TODO: Command line switch to activate log debug
 
 def error(message):
     print(f"Error: {message}", file=sys.stderr)
@@ -99,15 +103,66 @@ class Settings:
     def __init__(self, config):
         self.config = config
 
+    def month_filename(self, date):
+        month, year = date.month, date.year
+        year = str(year)[2:]
+        month = f"{month:02d}"
+        filename = f"{month}{year}"
+        path = os.path.join(self.config.path, f"month/{filename}")
+        return path
+
+class MonthTasks:
+
+    def __init__(self, created_at, settings):
+        self.created_at = created_at
+        self.settings = settings
+
+        self.task_tks = []
+
+    def objects(self):
+        tks = []
+        for tk_hash in self.task_tks:
+            tk = TaskInfo.load(tk_hash, self.settings)
+            tks.append(tk)
+        return tks
+
+    def add(self, tk_hash):
+        self.task_tks.append(tk_hash)
+
+    def save(self):
+        with open(self.settings.month_filename(self.created_at), "wb") as f:
+            pickle.dump(self, f)
+
+    @staticmethod
+    def load(date, settings):
+        with open(settings.month_filename(date), "rb") as f:
+            return pickle.load(f)
+
 class TaskInfo:
 
-    def __init__(self, assign, project, due, rank, settings):
+    def __init__(self, title, desc, assign, project, due,
+                 rank, created_at, settings):
+        self.title = title
+        self.desc = desc
+
         self.assign = assign
         self.project = project
         self.due = due
         self.rank = rank
+        self.created_at = created_at
 
         self.settings = settings
+
+    def activate(self):
+        # Open the task
+        try:
+            with open(self.settings.month_filename(self.created_at), "rb") as f:
+                month_tks = pickle.load(f)
+        except FileNotFoundError:
+            # File does not yet exist. Create a new one
+            month_tks = MonthTasks(self.created_at, self.settings)
+        month_tks.add(self.tk_hash())
+        month_tks.save()
 
     @staticmethod
     def data_path(settings, tk_hash):
@@ -123,7 +178,7 @@ class TaskInfo:
             pickle.dump(self, f)
 
     @staticmethod
-    def load(self, tk_hash, settings):
+    def load(tk_hash, settings):
         path = TaskInfo.data_path(settings, tk_hash)
         with open(path, "rb") as f:
             return pickle.load(f)
@@ -136,6 +191,8 @@ class TaskInfo:
     def __repr__(self):
         return (
             f"TaskInfo {{\n"
+            f"  title: {self.title},\n"
+            f"  desc: {self.desc},\n"
             f"  assign: {self.assign},\n"
             f"  project: {self.project},\n"
             f"  due: {self.due},\n"
@@ -148,12 +205,28 @@ def cmd_add(args, settings):
         error(f"due date {args.due} is not valid")
     due = convert_due_date(args.due)
 
-    # TODO: created_at attribute
+    created_at = datetime.datetime.now()
 
-    task_info = TaskInfo(args.assign, args.project, due, args.rank,
-                         settings)
+    title = input("Title: ")
+    desc = input("Description: ")
+
+    task_info = TaskInfo(title, desc, args.assign, args.project,
+                         due, args.rank, created_at, settings)
     task_info.save()
-    print(f"{task_info} {task_info.tk_hash()}")
+    task_info.activate()
+    print(f"tk hash: {task_info.tk_hash()}")
+    print(f"{task_info}")
+
+def cmd_show(args, settings):
+    now = datetime.datetime.now()
+    month_tks = MonthTasks.load(now, settings)
+    tks = month_tks.objects()
+    table = []
+    for tk in tks:
+        table.append((tk.title, tk.project, tk.assign, tk.due, tk.rank))
+    headers = ["Title", "Project", "Assigned", "Due", "Rank"]
+    print(tabulate(table, headers=headers))
+
 
 def run_app():
     parser = argparse.ArgumentParser(prog='tx',
@@ -199,6 +272,9 @@ def run_app():
         help="custom_key:custom_value attribute")
     parser_add.set_defaults(func=cmd_add)
 
+    parser_show = subparsers.add_parser("show", help="show open tasks")
+    parser_show.set_defaults(func=cmd_show)
+
     #parser.add_argument("-k", "--key", action='store_true', help="Generate a new keypair")
     #parser.add_argument("-i", "--info", action='store_true', help="Request info from daemon")
     #parser.add_argument("-s", "--stop", action='store_true', help="Send a stop signal to the daemon")
@@ -225,9 +301,9 @@ def run_app():
     config = None
 
     try:
-        config_path = os.environ["TX_CONFIG_PATH"]
+        config_path = os.environ["TAU_CONFIG_PATH"]
     except KeyError:
-        config_path = os.path.expanduser("~/.config/tk/")
+        config_path = os.path.expanduser("~/.config/tau/")
 
     config = Config(config_path)
     config.load()
@@ -235,6 +311,7 @@ def run_app():
 
     make_path(config_path)
     make_path(config_path, "task")
+    make_path(config_path, "month")
 
     try: 
         # Check the subcommand was actually specified

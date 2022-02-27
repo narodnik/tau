@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import os
 import argparse
 import datetime
 import pprint
@@ -154,6 +155,16 @@ def arg_parser(client):
     #       custom_editor="nvim"    # Forget this for now
     # 4. Load config into Settings class
     settings = None
+
+    try:
+        config_path = os.environ["TX_CONFIG_PATH"]
+    except KeyError:
+        config_path = os.path.expanduser("~/.config/tx/")
+
+    try:
+        os.makedirs(config_path)
+    except FileExistsError:
+        pass
 
     args.func(args, settings)
 

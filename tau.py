@@ -445,7 +445,12 @@ def cmd_list(args, settings):
                 or not tk.project.startswith(args.project_prefix)):
                 continue
 
-        table.append((tk.id, tk.title, tk.project, tk.assign, tk.due, tk.rank))
+        if tk.due is None:
+            due = None
+        else:
+            due = tk.due.strftime("%a %d %b")
+
+        table.append((tk.id, tk.title, tk.project, tk.assign, due, tk.rank))
     # Sort in order of the priority, what we call rank
     table.sort(key=lambda row: 0 if row[-1] is None else row[-1], reverse=True)
     headers = ["ID", "Title", "Project", "Assigned", "Due", "Rank"]

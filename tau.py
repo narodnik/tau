@@ -130,7 +130,7 @@ class Comment:
         return self
 
     def __repr__(self):
-        return f"comment{{ {self.content}, {self.author}, {self.timestamp} }}"
+        return f"comments{{ {self.content}, {self.author}, {self.timestamp} }}"
 
 class Settings:
 
@@ -446,7 +446,7 @@ def cmd_list(args, settings):
     print(tabulate(table, headers=headers))
 
 def cmd_comment(args, settings):
-    author = "roz"
+    #author = "roz"
     logging.debug("comment command called")
     tk = load_task_by_id(args.id, settings)
     if tk is None:
@@ -455,6 +455,10 @@ def cmd_comment(args, settings):
         comment = read_comment(settings)
     else:
         comment = args.comment
+    if args.author is None:
+        author = "anon"
+    else:
+        author = args.author
     tk.set_comment(comment, author)
     tk.save()
     print(tk)
@@ -599,6 +603,10 @@ def run_app():
         "-c", "--comment",
         default=None,
         help="comment content")
+    parser_comment.add_argument(
+        "-a", "--author",
+        default=None,
+        help="optional task author")
     parser_comment.set_defaults(func=cmd_comment)
 
     args = parser.parse_args()

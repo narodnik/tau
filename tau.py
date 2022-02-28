@@ -288,18 +288,21 @@ def cmd_list(args, settings):
     headers = ["ID", "Title", "Project", "Assigned", "Due", "Rank"]
     print(tabulate(table, headers=headers))
 
-def cmd_show(args, settings):
+def load_task_by_id(id, settings):
     now = datetime.datetime.now()
     month_tks = MonthTasks.load_or_create(now, settings)
     tks = month_tks.objects()
 
-    tk = [tk for tk in tks if tk.id == args.id]
+    tk = [tk for tk in tks if tk.id == id]
     assert len(tk) <= 1
 
     if not tk:
-        error(f"task ID {args.id} not found")
-    tk = tk[0]
+        return None
 
+    return tk[0]
+
+def cmd_show(args, settings):
+    tk = load_task_by_id(args.id, settings)
     print(tk)
 
 def run_app():

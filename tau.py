@@ -314,13 +314,13 @@ def run_app():
     except KeyError:
         config_path = os.path.expanduser("~/.config/tau/")
 
-    config = Config(config_path)
-    config.load()
-    settings = Settings(config)
-
     make_path(config_path)
     make_path(config_path, "task")
     make_path(config_path, "month")
+
+    config = Config(config_path)
+    config.load()
+    settings = Settings(config)
 
     try: 
         # Check the subcommand was actually specified

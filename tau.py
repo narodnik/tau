@@ -16,7 +16,7 @@ from decimal import Decimal as Real
 from tabulate import tabulate
 
 def error(message):
-    logging.error(f"Error: {message}", file=sys.stderr)
+    print(f"Error: {message}", file=sys.stderr)
     sys.exit(-1)
 
 def make_path(config_path, subdirs=None):
@@ -289,7 +289,18 @@ def cmd_list(args, settings):
     print(tabulate(table, headers=headers))
 
 def cmd_show(args, settings):
-    logging.debug("show command called")
+    now = datetime.datetime.now()
+    month_tks = MonthTasks.load_or_create(now, settings)
+    tks = month_tks.objects()
+
+    tk = [tk for tk in tks if tk.id == args.id]
+    assert len(tk) <= 1
+
+    if not tk:
+        error(f"task ID {args.id} not found")
+    tk = tk[0]
+
+    print(tk)
 
 def run_app():
     parser = argparse.ArgumentParser(prog='tau',
@@ -350,8 +361,11 @@ def run_app():
     parser_list.set_defaults(func=cmd_list)
 
     parser_show = subparsers.add_parser("show", help="show task by id")
+    parser_show.add_argument(
+        "id", nargs="?",
+        type=int, default=None,
+        help="task id")
     parser_show.set_defaults(func=cmd_show)
-    parser_show.add_argument('-i', '--id', default=None, required=True, help='task id')
 
     args = parser.parse_args()
     logging.basicConfig(level=args.loglevel)

@@ -296,6 +296,8 @@ def run_app():
         usage='%(prog)s [commands]',
         description="Collective task management cli"
     )
+    parser.add_argument("-v", "--verbose", action="store_true",
+            help="increase output verbosity")
     # TODO: add command -v/--verbose to parser
 
     subparsers = parser.add_subparsers()

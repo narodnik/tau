@@ -3,10 +3,12 @@
 import os
 import argparse
 import datetime
+import json
 import hashlib
 import pprint
 import pickle
 import sys
+import time
 from decimal import Decimal as Real
 from tabulate import tabulate
 
@@ -130,13 +132,21 @@ class MonthTasks:
         self.task_tks.append(tk_hash)
 
     def save(self):
-        with open(self.settings.month_filename(self.created_at), "wb") as f:
-            pickle.dump(self, f)
+        data = {
+            "created_at": self.created_at.timestamp(),
+            "tasks": self.task_tks
+        }
+        with open(self.settings.month_filename(self.created_at), "w") as f:
+            json.dump(data, f, indent=4)
 
     @staticmethod
     def load(date, settings):
-        with open(settings.month_filename(date), "rb") as f:
-            return pickle.load(f)
+        with open(settings.month_filename(date), "r") as f:
+            data = json.load(f)
+        created_at = datetime.datetime.fromtimestamp(data["created_at"])
+        self = MonthTasks(created_at, settings)
+        self.task_tks = data["tasks"]
+        return self
 
 class TaskInfo:
 
@@ -156,8 +166,7 @@ class TaskInfo:
     def activate(self):
         # Open the task
         try:
-            with open(self.settings.month_filename(self.created_at), "rb") as f:
-                month_tks = pickle.load(f)
+            month_tks = MonthTasks.load(self.created_at, self.settings)
         except FileNotFoundError:
             # File does not yet exist. Create a new one
             month_tks = MonthTasks(self.created_at, self.settings)

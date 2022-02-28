@@ -370,6 +370,17 @@ def run_app():
         help="task id")
     parser_show.set_defaults(func=cmd_show)
 
+    parser_comment = subparsers.add_parser("comment", help="comment on task by id")
+    parser_comment.add_argument(
+        "id", nargs="?",
+        type=int, default=None,
+        help="task id")
+    parser_comment.add_argument(
+        "-c, --comment", nargs="?",
+        type=int, default=None,
+        help="comment content")
+    parser_comment.set_defaults(func=cmd_show)
+
     args = parser.parse_args()
     logging.basicConfig(level=args.loglevel)
 

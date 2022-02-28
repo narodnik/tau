@@ -337,20 +337,3 @@ if __name__ == "__main__":
     run_app()
     sys.exit(0)
 
-    #rpc()
-    ## Example echo method
-    #payload = {
-    #    #"method:": args,
-    #    #"method": "stop",
-    #    "method": "get_info",
-    #    #"method": "say_hello",
-    #    #"params": [],
-    #    "jsonrpc": "2.0",
-    #    "id": 0,
-    #}
-    #response = requests.post(url, json=payload).json()
-
-    #print(response)
-    #assert response["result"] == "Hello World!"
-    #assert response["jsonrpc"]
-

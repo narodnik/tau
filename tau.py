@@ -163,6 +163,10 @@ class MonthTasks:
         except FileNotFoundError:
             # File does not yet exist. Create a new one
             month_tks = MonthTasks(date, settings)
+            # TODO: Auto roll over open tasks from month before
+            # Open last month, copy open tasks to this object
+            # Function to return open tasks from last month
+            # Then assign to this month and save.
             month_tks.save()
             return month_tks
 
@@ -205,7 +209,10 @@ class TaskInfo:
     def load(tk_hash, settings):
         path = TaskInfo.data_path(settings, tk_hash)
         with open(path, "rb") as f:
-            return pickle.load(f)
+            tk = pickle.load(f)
+        # Settings should not be loaded normally
+        tk.settings = settings
+        return tk
     
     def tk_hash(self):
         rep = repr(self).encode('utf-8')
@@ -289,6 +296,7 @@ def run_app():
         usage='%(prog)s [commands]',
         description="Collective task management cli"
     )
+    # TODO: add command -v/--verbose to parser
 
     subparsers = parser.add_subparsers()
 
@@ -339,10 +347,6 @@ def run_app():
     parser_show = subparsers.add_parser("show", help="show open tasks")
     parser_show.set_defaults(func=cmd_show)
 
-    #parser.add_argument("-k", "--key", action='store_true', help="Generate a new keypair")
-    #parser.add_argument("-i", "--info", action='store_true', help="Request info from daemon")
-    #parser.add_argument("-s", "--stop", action='store_true', help="Send a stop signal to the daemon")
-    #parser.add_argument("-hi", "--hello", action='store_true', help="Say hello")
     args = parser.parse_args()
 
     # TODO: load config, only steps until #2 for now. Do #3 onwards later

@@ -351,7 +351,7 @@ def run_app():
 
     parser_show = subparsers.add_parser("show", help="show task by id")
     parser_show.set_defaults(func=cmd_show)
-    parser_show.add_argument('-i', '--id', default=None, help='task id')
+    parser_show.add_argument('-i', '--id', default=None, required=True, help='task id')
 
     args = parser.parse_args()
     logging.basicConfig(level=args.loglevel)

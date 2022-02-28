@@ -148,6 +148,9 @@ class MonthTasks:
     def add(self, tk_hash):
         self.task_tks.append(tk_hash)
 
+    def remove(self, tk_hash):
+        self.task_tks.remove(tk_hash)
+
     def save(self):
         data = {
             "created_at": self.created_at.timestamp(),
@@ -291,10 +294,25 @@ def read_description(settings):
                      if line and line[0] != "#")
     return desc
 
-def find_free_id(settings):
+def load_current_open_tasks(settings):
     now = datetime.datetime.now()
     month_tks = MonthTasks.load_or_create(now, settings)
     tks = month_tks.objects()
+    return tks
+
+def load_task_by_id(id, settings):
+    tks = load_current_open_tasks(settings)
+
+    tk = [tk for tk in tks if tk.id == id]
+    assert len(tk) <= 1
+
+    if not tk:
+        return None
+
+    return tk[0]
+
+def find_free_id(settings):
+    tks = load_current_open_tasks(settings)
     tk_ids = [tk.id for tk in tks]
     for i in itertools.count():
         if i not in tk_ids:
@@ -339,20 +357,6 @@ def cmd_list(args, settings):
 def cmd_comment(args, settings):
     logging.debug("comment command called")
 
-
-def load_task_by_id(id, settings):
-    now = datetime.datetime.now()
-    month_tks = MonthTasks.load_or_create(now, settings)
-    tks = month_tks.objects()
-
-    tk = [tk for tk in tks if tk.id == id]
-    assert len(tk) <= 1
-
-    if not tk:
-        return None
-
-    return tk[0]
-
 def cmd_show(args, settings):
     tk = load_task_by_id(args.id, settings)
     if tk is None:
@@ -361,18 +365,29 @@ def cmd_show(args, settings):
 
 def cmd_start(args, settings):
     tk = load_task_by_id(args.id, settings)
+    if tk is None:
+        error(f"task ID {args.id} not found")
     tk.set_state("start")
     tk.save()
 
 def cmd_pause(args, settings):
     tk = load_task_by_id(args.id, settings)
+    if tk is None:
+        error(f"task ID {args.id} not found")
     tk.set_state("pause")
     tk.save()
 
 def cmd_stop(args, settings):
     tk = load_task_by_id(args.id, settings)
+    if tk is None:
+        error(f"task ID {args.id} not found")
     tk.set_state("stop")
     tk.save()
+
+    # Task is stopped so remove it from list of active tasks
+    now = datetime.datetime.now()
+    month_tks = MonthTasks.load_or_create(now, settings)
+    month_tks.remove(tk.tk_hash())
 
 def run_app():
     parser = argparse.ArgumentParser(prog='tau',

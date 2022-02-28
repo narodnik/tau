@@ -3,6 +3,7 @@
 import os
 import argparse
 import datetime
+import itertools
 import json
 import hashlib
 import pprint
@@ -155,10 +156,21 @@ class MonthTasks:
         self.task_tks = data["tasks"]
         return self
 
+    @staticmethod
+    def load_or_create(date, settings):
+        try:
+            return MonthTasks.load(date, settings)
+        except FileNotFoundError:
+            # File does not yet exist. Create a new one
+            month_tks = MonthTasks(date, settings)
+            month_tks.save()
+            return month_tks
+
 class TaskInfo:
 
-    def __init__(self, title, desc, assign, project, due,
+    def __init__(self, id, title, desc, assign, project, due,
                  rank, created_at, settings):
+        self.id = id
         self.title = title
         self.desc = desc
 
@@ -172,11 +184,7 @@ class TaskInfo:
 
     def activate(self):
         # Open the task
-        try:
-            month_tks = MonthTasks.load(self.created_at, self.settings)
-        except FileNotFoundError:
-            # File does not yet exist. Create a new one
-            month_tks = MonthTasks(self.created_at, self.settings)
+        month_tks = MonthTasks.load_or_create(self.created_at, self.settings)
         month_tks.add(self.tk_hash())
         month_tks.save()
 
@@ -207,6 +215,7 @@ class TaskInfo:
     def __repr__(self):
         return (
             f"TaskInfo {{\n"
+            f"  id: {self.id},\n"
             f"  title: {self.title},\n"
             f"  desc: {self.desc},\n"
             f"  assign: {self.assign},\n"
@@ -229,10 +238,21 @@ def read_description(settings):
                      if line and line[0] != "#")
     return desc
 
+def find_free_id(settings):
+    now = datetime.datetime.now()
+    month_tks = MonthTasks.load_or_create(now, settings)
+    tks = month_tks.objects()
+    tk_ids = [tk.id for tk in tks]
+    for i in itertools.count():
+        if i not in tk_ids:
+            return i
+
 def cmd_add(args, settings):
     if not validate_due_date(args.due):
         error(f"due date {args.due} is not valid")
     due = convert_due_date(args.due)
+
+    id = find_free_id(settings)
 
     created_at = datetime.datetime.now()
 
@@ -246,7 +266,7 @@ def cmd_add(args, settings):
     else:
         desc = args.desc
 
-    task_info = TaskInfo(title, desc, args.assign, args.project,
+    task_info = TaskInfo(id, title, desc, args.assign, args.project,
                          due, args.rank, created_at, settings)
     task_info.save()
     task_info.activate()
@@ -255,7 +275,7 @@ def cmd_add(args, settings):
 
 def cmd_show(args, settings):
     now = datetime.datetime.now()
-    month_tks = MonthTasks.load(now, settings)
+    month_tks = MonthTasks.load_or_create(now, settings)
     tks = month_tks.objects()
     table = []
     for tk in tks:

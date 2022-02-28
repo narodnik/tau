@@ -464,13 +464,23 @@ def cmd_show(args, settings):
     if tk is None:
         error(f"task ID {args.id} not found")
     print(tk)
+
+    combined_log = tk.comments[:] + tk.events[:]
+    combined_log.sort(key=lambda obj: obj.timestamp)
     table = []
-    for comment in tk.comments:
-        table.append((
-            f"{comment.author} says:",
-            comment.content,
-            comment.timestamp.strftime("%H:%M %d %b %Y")
-        ))
+    for obj in combined_log:
+        if isinstance(obj, Comment):
+            table.append((
+                f"{obj.author} says:",
+                obj.content,
+                obj.timestamp.strftime("%H:%M %d %b %Y")
+            ))
+        elif isinstance(obj, TaskEvent):
+            table.append((
+                "status changed",
+                obj.action,
+                obj.timestamp.strftime("%H:%M %d %b %Y")
+            ))
     print(tabulate(table))
 
 def cmd_start(args, settings):

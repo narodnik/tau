@@ -388,6 +388,7 @@ def cmd_stop(args, settings):
     now = datetime.datetime.now()
     month_tks = MonthTasks.load_or_create(now, settings)
     month_tks.remove(tk.tk_hash())
+    month_tks.save()
 
 def run_app():
     parser = argparse.ArgumentParser(prog='tau',

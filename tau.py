@@ -8,6 +8,7 @@ import hashlib
 import pprint
 import pickle
 import sys
+import tempfile
 import time
 from decimal import Decimal as Real
 from tabulate import tabulate
@@ -217,8 +218,14 @@ def cmd_add(args, settings):
 
     created_at = datetime.datetime.now()
 
-    title = input("Title: ")
-    desc = input("Description: ")
+    if args.title is None:
+        title = input("Title: ")
+    else:
+        title = args.title
+
+    temp = tempfile.NamedTemporaryFile()
+    os.system(f"{settings.editor} {temp.name}")
+    desc = temp.read().decode("utf-8").strip()
 
     task_info = TaskInfo(title, desc, args.assign, args.project,
                          due, args.rank, created_at, settings)
@@ -276,6 +283,10 @@ def run_app():
         type=Real, default=None,
         help=("project rank, is an arbitrary precision"
               "decimal real value: 4.8761"))
+    parser_add.add_argument(
+        "-t", "--title",
+        default=None,
+        help="specify task title")
     parser_add.add_argument(
         "-c", "--custom",
         default=None,

@@ -297,7 +297,8 @@ def read_description(settings):
 def load_current_open_tasks(settings):
     now = datetime.datetime.now()
     month_tks = MonthTasks.load_or_create(now, settings)
-    tks = month_tks.objects()
+    # Return only tasks which remain open
+    tks = [tk for tk in month_tks.objects() if tk.get_state() != "stop"]
     return tks
 
 def load_task_by_id(id, settings):
@@ -345,9 +346,7 @@ def cmd_add(args, settings):
     logging.info(f"{task_info}")
 
 def cmd_list(args, settings):
-    now = datetime.datetime.now()
-    month_tks = MonthTasks.load_or_create(now, settings)
-    tks = month_tks.objects()
+    tks = load_current_open_tasks(settings)
     table = []
     for tk in tks:
         table.append((tk.id, tk.title, tk.project, tk.assign, tk.due, tk.rank))
@@ -385,12 +384,6 @@ def cmd_stop(args, settings):
         error(f"task ID {args.id} not found")
     tk.set_state("stop")
     tk.save()
-
-    # Task is stopped so remove it from list of active tasks
-    now = datetime.datetime.now()
-    month_tks = MonthTasks.load_or_create(now, settings)
-    month_tks.remove(tk.tk_hash())
-    month_tks.save()
 
 def run_app():
     parser = argparse.ArgumentParser(prog='tau',

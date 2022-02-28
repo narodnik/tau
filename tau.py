@@ -6,6 +6,7 @@ import datetime
 import itertools
 import json
 import hashlib
+import logging
 import pprint
 import pickle
 import sys
@@ -18,7 +19,7 @@ from tabulate import tabulate
 # TODO: Command line switch to activate log debug
 
 def error(message):
-    print(f"Error: {message}", file=sys.stderr)
+    logging.error(f"Error: {message}", file=sys.stderr)
     sys.exit(-1)
 
 def make_path(config_path, subdirs=None):
@@ -277,8 +278,8 @@ def cmd_add(args, settings):
                          due, args.rank, created_at, settings)
     task_info.save()
     task_info.activate()
-    print(f"tk hash: {task_info.tk_hash()}")
-    print(f"{task_info}")
+    logging.info(f"tk hash: {task_info.tk_hash()}")
+    logging.info(f"{task_info}")
 
 def cmd_show(args, settings):
     now = datetime.datetime.now()
@@ -296,8 +297,11 @@ def run_app():
         usage='%(prog)s [commands]',
         description="Collective task management cli"
     )
-    parser.add_argument("-v", "--verbose", action="store_true",
-            help="increase output verbosity")
+    parser.add_argument("-v", "--verbose",
+            action="store_const",
+            dest="loglevel", const=logging.DEBUG, default=logging.WARNING,
+            help="increase output verbosity"),
+
     # TODO: add command -v/--verbose to parser
 
     subparsers = parser.add_subparsers()
@@ -350,6 +354,7 @@ def run_app():
     parser_show.set_defaults(func=cmd_show)
 
     args = parser.parse_args()
+    logging.basicConfig(level=args.loglevel)
 
     # TODO: load config, only steps until #2 for now. Do #3 onwards later
     # weaker priority than command line args

@@ -279,8 +279,8 @@ def cmd_show(args, settings):
     tks = month_tks.objects()
     table = []
     for tk in tks:
-        table.append((tk.title, tk.project, tk.assign, tk.due, tk.rank))
-    headers = ["Title", "Project", "Assigned", "Due", "Rank"]
+        table.append((tk.id, tk.title, tk.project, tk.assign, tk.due, tk.rank))
+    headers = ["ID", "Title", "Project", "Assigned", "Due", "Rank"]
     print(tabulate(table, headers=headers))
 
 

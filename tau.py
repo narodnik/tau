@@ -459,6 +459,14 @@ def cmd_show(args, settings):
     if tk is None:
         error(f"task ID {args.id} not found")
     print(tk)
+    table = []
+    for comment in tk.comments:
+        table.append((
+            f"{comment.author} says:",
+            comment.content,
+            comment.timestamp.strftime("%H:%M %d %b %Y")
+        ))
+    print(tabulate(table))
 
 def cmd_start(args, settings):
     tk = load_task_by_id(args.id, settings)

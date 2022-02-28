@@ -351,6 +351,8 @@ def cmd_list(args, settings):
     table = []
     for tk in tks:
         table.append((tk.id, tk.title, tk.project, tk.assign, tk.due, tk.rank))
+    # Sort in order of the priority, what we call rank
+    table.sort(key=lambda row: 0 if row[-1] is None else row[-1], reverse=True)
     headers = ["ID", "Title", "Project", "Assigned", "Due", "Rank"]
     print(tabulate(table, headers=headers))
 

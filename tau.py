@@ -104,6 +104,7 @@ class Settings:
 
     def __init__(self, config):
         self.config = config
+        self.editor = os.environ.get('EDITOR', 'nvim')
 
     def month_filename(self, date):
         month, year = date.month, date.year

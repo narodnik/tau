@@ -75,9 +75,14 @@ def convert_due_date(date):
     # !!!
     # This line can throw ValueError if month or day is invalid!
     # Should be caught by validate_due_date(date)
-    due_date = datetime.date(year, month, day)
+    due = datetime.date(year, month, day)
 
-    return due_date
+    # Keep incrementing year for due date until it's in the future
+    now = datetime.datetime.now().date()
+    while due < now:
+        due = due.replace(year = due.year + 1)
+
+    return due
 
 class Config:
 
@@ -211,6 +216,19 @@ class TaskInfo:
             f"}}"
         )
 
+def read_description(settings):
+    temp = tempfile.NamedTemporaryFile()
+    temp.write(b"\n")
+    temp.write(b"# Write task description above this line\n")
+    temp.write(b"# These lines will be removed\n")
+    temp.flush()
+    os.system(f"{settings.editor} {temp.name}")
+    desc = open(temp.name, "r").read()
+    # Remove comments and empty lines from desc
+    desc = "\n".join(line for line in desc.split("\n")
+                     if line and line[0] != "#")
+    return desc
+
 def cmd_add(args, settings):
     if not validate_due_date(args.due):
         error(f"due date {args.due} is not valid")
@@ -223,9 +241,10 @@ def cmd_add(args, settings):
     else:
         title = args.title
 
-    temp = tempfile.NamedTemporaryFile()
-    os.system(f"{settings.editor} {temp.name}")
-    desc = temp.read().decode("utf-8").strip()
+    if args.desc is None:
+        desc = read_description(settings)
+    else:
+        desc = args.desc
 
     task_info = TaskInfo(title, desc, args.assign, args.project,
                          due, args.rank, created_at, settings)
@@ -287,6 +306,10 @@ def run_app():
         "-t", "--title",
         default=None,
         help="specify task title")
+    parser_add.add_argument(
+        "--desc",
+        default=None,
+        help="specify task description")
     parser_add.add_argument(
         "-c", "--custom",
         default=None,

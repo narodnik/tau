@@ -116,6 +116,19 @@ class Comment:
         self.author = author
         self.timestamp = datetime.datetime.now()
 
+    def to_json(self):
+        return {
+            "content": self.content,
+            "author": self.author,
+            "timestamp": self.timestamp.timestamp(),
+        }
+
+    @staticmethod
+    def from_json(data):
+        self = Comment(data["content"], data["author"])
+        self.timestamp = datetime.datetime.fromtimestamp(data["timestamp"])
+        return self
+
     def __repr__(self):
         return f"event{{ {self.content}, {self.author}, {self.timestamp} }}"
 
@@ -191,6 +204,18 @@ class TaskEvent:
         self.action = action
         self.timestamp = datetime.datetime.now()
 
+    def to_json(self):
+        return {
+            "action": self.action,
+            "timestamp": self.timestamp.timestamp(),
+        }
+
+    @staticmethod
+    def from_json(data):
+        self = TaskEvent(data["action"])
+        self.timestamp = datetime.datetime.fromtimestamp(data["timestamp"])
+        return self
+
     def __repr__(self):
         return f"event{{ {self.action}, {self.timestamp} }}"
 
@@ -210,9 +235,9 @@ class TaskInfo:
         self.created_at = created_at
 
         self.events = []
+        self.comments = []
 
         self.settings = settings
-        self.comments = []
 
     def set_state(self, action):
         # Do nothing if this state is already active
@@ -250,16 +275,48 @@ class TaskInfo:
         return TaskInfo.data_path(self.settings, self.tk_hash())
 
     def save(self):
-        with open(self.path(), "wb") as f:
-            pickle.dump(self, f)
+        if self.due is None:
+            due = None
+        else:
+            due = self.due.strftime("%d%m%y")
+        data = {
+            "id": self.id,
+            "title": self.title,
+            "desc": self.desc,
+            "assign": self.assign,
+            "project": self.project,
+            "due": due,
+            "rank": str(self.rank),
+            "created_at": self.created_at.timestamp(),
+            "events": [event.to_json() for event in self.events],
+            "comments": [comment.to_json() for comment in self.comments],
+        }
+        with open(self.path(), "w") as f:
+            json.dump(data, f, indent=4)
 
     @staticmethod
     def load(tk_hash, settings):
         path = TaskInfo.data_path(settings, tk_hash)
-        with open(path, "rb") as f:
-            tk = pickle.load(f)
-        # Settings should not be loaded normally
-        tk.settings = settings
+        with open(path, "r") as f:
+            data = json.load(f)
+
+        if data["due"] is None:
+            due = None
+        else:
+            due = datetime.datetime.strptime(data["due"], "%d%m%y").date()
+        created_at = datetime.datetime.fromtimestamp(data["created_at"])
+        if data["rank"] is None:
+            rank = None
+        else:
+            rank = Real(data["rank"])
+        tk = TaskInfo(
+            tk_hash, data["id"], data["title"], data["desc"],
+            data["assign"], data["project"], due, rank,
+            created_at, settings)
+        for event_data in data["events"]:
+            tk.events.append(TaskEvent.from_json(event_data))
+        for comment_data in data["comments"]:
+            tk.comments.append(Comment.from_json(comment_data))
         return tk
     
     def tk_hash(self):

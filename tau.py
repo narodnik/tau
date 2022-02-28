@@ -279,10 +279,12 @@ class TaskInfo:
             due = None
         else:
             due = self.due.strftime("%d%m%y")
+
         if self.rank is None:
             rank = None
         else:
             rank = str(self.rank)
+
         data = {
             "id": self.id,
             "title": self.title,
@@ -308,11 +310,14 @@ class TaskInfo:
             due = None
         else:
             due = datetime.datetime.strptime(data["due"], "%d%m%y").date()
+
         created_at = datetime.datetime.fromtimestamp(data["created_at"])
+
         if data["rank"] is None:
             rank = None
         else:
             rank = Real(data["rank"])
+
         tk = TaskInfo(
             tk_hash, data["id"], data["title"], data["desc"],
             data["assign"], data["project"], due, rank,

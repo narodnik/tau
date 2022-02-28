@@ -278,7 +278,7 @@ def cmd_add(args, settings):
     logging.info(f"tk hash: {task_info.tk_hash()}")
     logging.info(f"{task_info}")
 
-def cmd_show(args, settings):
+def cmd_list(args, settings):
     now = datetime.datetime.now()
     month_tks = MonthTasks.load_or_create(now, settings)
     tks = month_tks.objects()
@@ -344,8 +344,8 @@ def run_app():
         help="custom_key:custom_value attribute")
     parser_add.set_defaults(func=cmd_add)
 
-    parser_show = subparsers.add_parser("show", help="show open tasks")
-    parser_show.set_defaults(func=cmd_show)
+    parser_list = subparsers.add_parser("list", help="list open tasks")
+    parser_list.set_defaults(func=cmd_list)
 
     args = parser.parse_args()
     logging.basicConfig(level=args.loglevel)

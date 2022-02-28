@@ -130,7 +130,7 @@ class Comment:
         return self
 
     def __repr__(self):
-        return f"event{{ {self.content}, {self.author}, {self.timestamp} }}"
+        return f"comment{{ {self.content}, {self.author}, {self.timestamp} }}"
 
 class Settings:
 

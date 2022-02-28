@@ -114,7 +114,10 @@ class Comment:
     def __init__(self, content, author):
         self.content = content
         self.author = author
-        self.timestamp = datetime.now()
+        self.timestamp = datetime.datetime.now()
+
+    def __repr__(self):
+        return f"event{{ {self.content}, {self.author}, {self.timestamp} }}"
 
 class Settings:
 
@@ -218,6 +221,13 @@ class TaskInfo:
         event = TaskEvent(action)
         self.events.append(event)
 
+    def set_comment(self, comment, author):
+        logging.debug(f"{comment}")
+        comment = Comment(comment, author)
+        logging.debug(f"{comment}")
+        self.comments.append(comment)
+        logging.debug(f"{self.comments}")
+
     def get_state(self):
         if not self.events:
             return "open"
@@ -227,7 +237,8 @@ class TaskInfo:
         # Open the task
         month_tks = MonthTasks.load_or_create(self.created_at, self.settings)
         month_tks.add(self.tk_hash())
-        month_tks.save()
+        month_tks.save()    
+
 
     @staticmethod
     def data_path(settings, tk_hash):
@@ -294,6 +305,19 @@ def read_description(settings):
                      if line and line[0] != "#")
     return desc
 
+def read_comment(settings):
+    temp = tempfile.NamedTemporaryFile()
+    temp.write(b"\n")
+    temp.write(b"# Write comment above this line\n")
+    temp.write(b"# These lines will be removed\n")
+    temp.flush()
+    os.system(f"{settings.editor} {temp.name}")
+    comment = open(temp.name, "r").read()
+    # Remove comments and empty lines from comment
+    comment = "\n".join(line for line in comment.split("\n")
+                     if line and line[0] != "#")
+    return comment
+
 def load_current_open_tasks(settings):
     now = datetime.datetime.now()
     month_tks = MonthTasks.load_or_create(now, settings)
@@ -356,7 +380,18 @@ def cmd_list(args, settings):
     print(tabulate(table, headers=headers))
 
 def cmd_comment(args, settings):
+    author = "roz"
     logging.debug("comment command called")
+    tk = load_task_by_id(args.id, settings)
+    if tk is None:
+        error(f"task ID {args.id} not found")
+    if args.comment is None:
+        comment = read_comment(settings)
+    else:
+        comment = args.comment
+    tk.set_comment(comment, author)
+    tk.save()
+    print(tk)
 
 def cmd_show(args, settings):
     tk = load_task_by_id(args.id, settings)
@@ -477,8 +512,8 @@ def run_app():
         type=int, default=None,
         help="task id")
     parser_comment.add_argument(
-        "-c", nargs="?",
-        type=int, default=None,
+        "-c", "--comment",
+        default=None,
         help="comment content")
     parser_comment.set_defaults(func=cmd_comment)
 

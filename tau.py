@@ -105,6 +105,13 @@ class Config:
     def filename(self):
         return os.path.join(self.path, "tk.toml")
 
+class Comment:
+
+    def __init__(self, content, author):
+        self.content = content
+        self.author = author
+        self.timestamp = datetime.now()
+
 class Settings:
 
     def __init__(self, config):
@@ -183,6 +190,7 @@ class TaskInfo:
         self.created_at = created_at
 
         self.settings = settings
+        self.comments = []
 
     def activate(self):
         # Open the task
@@ -227,6 +235,7 @@ class TaskInfo:
             f"  project: {self.project},\n"
             f"  due: {self.due},\n"
             f"  rank: {self.rank},\n"
+            f"  comments: {self.comments},\n"
             f"}}"
         )
 
@@ -287,6 +296,10 @@ def cmd_list(args, settings):
         table.append((tk.id, tk.title, tk.project, tk.assign, tk.due, tk.rank))
     headers = ["ID", "Title", "Project", "Assigned", "Due", "Rank"]
     print(tabulate(table, headers=headers))
+
+def cmd_comment(args, settings):
+    logging.debug("comment command called")
+
 
 def load_task_by_id(id, settings):
     now = datetime.datetime.now()
@@ -376,10 +389,10 @@ def run_app():
         type=int, default=None,
         help="task id")
     parser_comment.add_argument(
-        "-c, --comment", nargs="?",
+        "-c", nargs="?",
         type=int, default=None,
         help="comment content")
-    parser_comment.set_defaults(func=cmd_show)
+    parser_comment.set_defaults(func=cmd_comment)
 
     args = parser.parse_args()
     logging.basicConfig(level=args.loglevel)

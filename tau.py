@@ -279,6 +279,10 @@ class TaskInfo:
             due = None
         else:
             due = self.due.strftime("%d%m%y")
+        if self.rank is None:
+            rank = None
+        else:
+            rank = str(self.rank)
         data = {
             "id": self.id,
             "title": self.title,
@@ -286,7 +290,7 @@ class TaskInfo:
             "assign": self.assign,
             "project": self.project,
             "due": due,
-            "rank": str(self.rank),
+            "rank": rank,
             "created_at": self.created_at.timestamp(),
             "events": [event.to_json() for event in self.events],
             "comments": [comment.to_json() for comment in self.comments],

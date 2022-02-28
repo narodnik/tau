@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import binascii
 import os
 import argparse
 import datetime
@@ -18,6 +19,9 @@ from tabulate import tabulate
 def error(message):
     print(f"Error: {message}", file=sys.stderr)
     sys.exit(-1)
+
+def random_hex_string():
+    return binascii.b2a_hex(os.urandom(15)).decode("ascii")
 
 def make_path(config_path, subdirs=None):
     if subdirs is not None:
@@ -168,10 +172,20 @@ class MonthTasks:
             month_tks.save()
             return month_tks
 
+class TaskEvent:
+
+    def __init__(self, action):
+        self.action = action
+        self.timestamp = datetime.datetime.now()
+
+    def __repr__(self):
+        return f"event{{ {self.action}, {self.timestamp} }}"
+
 class TaskInfo:
 
-    def __init__(self, id, title, desc, assign, project, due,
+    def __init__(self, ref_id, id, title, desc, assign, project, due,
                  rank, created_at, settings):
+        self.ref_id = ref_id
         self.id = id
         self.title = title
         self.desc = desc
@@ -182,7 +196,21 @@ class TaskInfo:
         self.rank = rank
         self.created_at = created_at
 
+        self.events = []
+
         self.settings = settings
+
+    def set_state(self, action):
+        # Do nothing if this state is already active
+        if self.get_state() == action:
+            return
+        event = TaskEvent(action)
+        self.events.append(event)
+
+    def get_state(self):
+        if not self.events:
+            return "open"
+        return self.events[-1].action
 
     def activate(self):
         # Open the task
@@ -213,22 +241,33 @@ class TaskInfo:
         return tk
     
     def tk_hash(self):
-        rep = repr(self).encode('utf-8')
-        result = hashlib.sha256(rep).hexdigest()
-        return result
+        # TODO: replace tk_hash with ref_id
+        # TODO: come up with proper naming/distinction between id and ref_id
+        return self.ref_id
 
     def __repr__(self):
-        return (
+        result = (
             f"TaskInfo {{\n"
-            f"  id: {self.id},\n"
-            f"  title: {self.title},\n"
-            f"  desc: {self.desc},\n"
-            f"  assign: {self.assign},\n"
-            f"  project: {self.project},\n"
-            f"  due: {self.due},\n"
-            f"  rank: {self.rank},\n"
+            f"  ref_id: {self.ref_id}\n"
+            f"  id: {self.id}\n"
+            f"  title: {self.title}\n"
+            f"  desc: {self.desc}\n"
+            f"  assign: {self.assign}\n"
+            f"  project: {self.project}\n"
+            f"  due: {self.due}\n"
+            f"  rank: {self.rank}\n"
+            f"  events: [\n"
+        )
+
+        for event in self.events:
+            result += f"    {event}\n"
+
+        result += (
+            f"  ]\n"
+            f"  current_state: {self.get_state()}\n"
             f"}}"
         )
+        return result
 
 def read_description(settings):
     temp = tempfile.NamedTemporaryFile()
@@ -257,6 +296,7 @@ def cmd_add(args, settings):
         error(f"due date {args.due} is not valid")
     due = convert_due_date(args.due)
 
+    ref_id = random_hex_string()
     id = find_free_id(settings)
 
     created_at = datetime.datetime.now()
@@ -271,11 +311,10 @@ def cmd_add(args, settings):
     else:
         desc = args.desc
 
-    task_info = TaskInfo(id, title, desc, args.assign, args.project,
+    task_info = TaskInfo(ref_id, id, title, desc, args.assign, args.project,
                          due, args.rank, created_at, settings)
     task_info.save()
     task_info.activate()
-    logging.info(f"tk hash: {task_info.tk_hash()}")
     logging.info(f"{task_info}")
 
 def cmd_list(args, settings):
@@ -303,7 +342,24 @@ def load_task_by_id(id, settings):
 
 def cmd_show(args, settings):
     tk = load_task_by_id(args.id, settings)
+    if tk is None:
+        error(f"task ID {args.id} not found")
     print(tk)
+
+def cmd_start(args, settings):
+    tk = load_task_by_id(args.id, settings)
+    tk.set_state("start")
+    tk.save()
+
+def cmd_pause(args, settings):
+    tk = load_task_by_id(args.id, settings)
+    tk.set_state("pause")
+    tk.save()
+
+def cmd_stop(args, settings):
+    tk = load_task_by_id(args.id, settings)
+    tk.set_state("stop")
+    tk.save()
 
 def run_app():
     parser = argparse.ArgumentParser(prog='tau',
@@ -369,6 +425,27 @@ def run_app():
         type=int, default=None,
         help="task id")
     parser_show.set_defaults(func=cmd_show)
+
+    parser_start = subparsers.add_parser("start", help="start task by id")
+    parser_start.add_argument(
+        "id", nargs="?",
+        type=int, default=None,
+        help="task id")
+    parser_start.set_defaults(func=cmd_start)
+
+    parser_pause = subparsers.add_parser("pause", help="pause task by id")
+    parser_pause.add_argument(
+        "id", nargs="?",
+        type=int, default=None,
+        help="task id")
+    parser_pause.set_defaults(func=cmd_pause)
+
+    parser_stop = subparsers.add_parser("stop", help="stop task by id")
+    parser_stop.add_argument(
+        "id", nargs="?",
+        type=int, default=None,
+        help="task id")
+    parser_stop.set_defaults(func=cmd_stop)
 
     args = parser.parse_args()
     logging.basicConfig(level=args.loglevel)

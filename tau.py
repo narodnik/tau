@@ -292,7 +292,7 @@ def cmd_show(args, settings):
     logging.debug("show command called")
 
 def run_app():
-    parser = argparse.ArgumentParser(prog='tx',
+    parser = argparse.ArgumentParser(prog='tau',
         usage='%(prog)s [commands]',
         description="Collective task management cli"
     )
@@ -308,7 +308,7 @@ def run_app():
     # custom adds additional custom attributes
     # rank is arbitrary Decimal precision
     #
-    # $ tx add -a nar -p zk
+    # $ tau add -a nar -p zk
     # Title: "read paper on DARK compilers"
     # Description: _
     #
@@ -358,14 +358,14 @@ def run_app():
 
     # TODO: load config, only steps until #2 for now. Do #3 onwards later
     # weaker priority than command line args
-    # ~/.config/tx/tx.toml
+    # ~/.config/tau/tau.toml
     # [settings]
     # custom_editor="nvim"
     #
     # 1. Read environment variable TX_CONFIG_PATH=...
-    #    default is not set is ~/.config/tx/
+    #    default is not set is ~/.config/tau/
     # 2. make directory if it doesn't already exist
-    # 3. Load {config_path}/tx.toml
+    # 3. Load {config_path}/tau.toml
     #    has a settings section
     #       [settings]
     #       custom_editor="nvim"    # Forget this for now

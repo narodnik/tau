@@ -288,6 +288,8 @@ def cmd_list(args, settings):
     headers = ["ID", "Title", "Project", "Assigned", "Due", "Rank"]
     print(tabulate(table, headers=headers))
 
+def cmd_show(args, settings):
+    logging.debug("show command called")
 
 def run_app():
     parser = argparse.ArgumentParser(prog='tx',
@@ -346,6 +348,10 @@ def run_app():
 
     parser_list = subparsers.add_parser("list", help="list open tasks")
     parser_list.set_defaults(func=cmd_list)
+
+    parser_show = subparsers.add_parser("show", help="show task by id")
+    parser_show.set_defaults(func=cmd_show)
+    parser_show.add_argument('-i', '--id', default=None, help='task id')
 
     args = parser.parse_args()
     logging.basicConfig(level=args.loglevel)

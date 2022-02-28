@@ -15,9 +15,6 @@ import time
 from decimal import Decimal as Real
 from tabulate import tabulate
 
-# TODO: Add logger for debug messages.
-# TODO: Command line switch to activate log debug
-
 def error(message):
     logging.error(f"Error: {message}", file=sys.stderr)
     sys.exit(-1)
@@ -301,9 +298,6 @@ def run_app():
             action="store_const",
             dest="loglevel", const=logging.DEBUG, default=logging.WARNING,
             help="increase output verbosity"),
-
-    # TODO: add command -v/--verbose to parser
-
     subparsers = parser.add_subparsers()
 
     # add [-a/--assign USER] [-p/--project zk] [-d/--due DDMM] [-r/--rank 4.87]

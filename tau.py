@@ -15,6 +15,7 @@ import tempfile
 import time
 from decimal import Decimal as Real
 from tabulate import tabulate
+from colorama import Fore, Back, Style
 
 def error(message):
     print(f"Error: {message}", file=sys.stderr)
@@ -437,13 +438,28 @@ def cmd_add(args, settings):
 
 def cmd_list(args, settings):
     tks = load_current_open_tasks(settings)
+
+    def get_sort_key(tk):
+        if tk.rank is None:
+            return 0
+        return tk.rank
+
+    tks.sort(key=get_sort_key, reverse=True)
+    headers = ["ID", "Title", "Project", "Assigned", "Due", "Rank"]
+    
     table = []
     for tk in tks:
-        table.append((tk.id, tk.title, tk.project, tk.assign, tk.due, tk.rank))
-    # Sort in order of the priority, what we call rank
-    table.sort(key=lambda row: 0 if row[-1] is None else row[-1], reverse=True)
-    headers = ["ID", "Title", "Project", "Assigned", "Due", "Rank"]
+        if tk.rank is None:
+            table.append((tk.id, tk.title, tk.project, tk.assign, tk.due, tk.rank))
+        else: 
+            rank = color_rank(tk.rank)
+            table.append((tk.id, tk.title, tk.project, tk.assign, tk.due, rank))
+
     print(tabulate(table, headers=headers))
+
+def color_rank(rank):
+    color_rank = Fore.GREEN + str(rank) + Style.RESET_ALL
+    return color_rank
 
 def cmd_comment(args, settings):
     #author = "roz"

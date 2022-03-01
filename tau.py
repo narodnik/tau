@@ -446,20 +446,39 @@ def cmd_list(args, settings):
 
     tks.sort(key=get_sort_key, reverse=True)
     headers = ["ID", "Title", "Project", "Assigned", "Due", "Rank"]
-    
+
+    # Extract ranks from task:
+    #   ranks = [tk.rank for tk in tks]
+    # Filter ranks by adding a conditional:
+    #   ... if tk.rank is not None
+    ranks = [tk.rank for tk in tks if tk.rank is not None]
+
+    print(ranks)
+    high_rank = max(ranks)
+    low_rank = min(ranks)
+    mean_rank = sum(ranks)/len(ranks)
+
     table = []
     for tk in tks:
         if tk.rank is None:
             table.append((tk.id, tk.title, tk.project, tk.assign, tk.due, tk.rank))
         else: 
-            rank = color_rank(tk.rank)
+            rank = color_rank(tk.rank, high_rank, low_rank, mean_rank)
             table.append((tk.id, tk.title, tk.project, tk.assign, tk.due, rank))
 
     print(tabulate(table, headers=headers))
 
-def color_rank(rank):
-    color_rank = Fore.GREEN + str(rank) + Style.RESET_ALL
-    return color_rank
+def color_rank(rank, high_rank, low_rank, mean_rank):
+    if rank > low_rank < mean_rank:
+        color = Fore.CYAN
+    if rank < high_rank > mean_rank:
+        color = Fore.CYAN
+    if rank == high_rank:
+        color = Fore.CYAN + Style.BRIGHT
+    if rank == low_rank: 
+        color = Fore.BLUE + Style.DIM
+    colored_rank = color + str(rank) + Style.RESET_ALL
+    return colored_rank
 
 def cmd_comment(args, settings):
     #author = "roz"

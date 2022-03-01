@@ -460,12 +460,24 @@ def cmd_list(args, settings):
 
     table = []
     for tk in tks:
+        ### Apply prefix filter if needed
+        if args.project_prefix is not None:
+            if (tk.project is None
+                or not tk.project.startswith(args.project_prefix)):
+                continue
+
+        if tk.due is None:
+            due = None
+        else:
+            due = tk.due.strftime("%a %d %b")
+
         if tk.rank is None:
             table.append((tk.id, tk.title, tk.project, tk.assign, tk.due, tk.rank))
         else: 
             rank = color_rank(tk.rank, high_rank, low_rank, mean_rank)
             table.append((tk.id, tk.title, tk.project, tk.assign, tk.due, rank))
 
+    headers = ["ID", "Title", "Project", "Assigned", "Due", "Rank"]
     print(tabulate(table, headers=headers))
 
 def color_rank(rank, high_rank, low_rank, mean_rank):
@@ -543,6 +555,9 @@ def cmd_stop(args, settings):
     tk.set_state("stop")
     tk.save()
 
+def cmd_log(args, settings):
+    print(args.date)
+
 def run_app():
     parser = argparse.ArgumentParser(prog='tau',
         usage='%(prog)s [commands]',
@@ -599,6 +614,10 @@ def run_app():
     parser_add.set_defaults(func=cmd_add)
 
     parser_list = subparsers.add_parser("list", help="list open tasks")
+    parser_list.add_argument(
+        "project_prefix", nargs="?",
+        default=None,
+        help="project search prefix")
     parser_list.set_defaults(func=cmd_list)
 
     parser_show = subparsers.add_parser("show", help="show task by id")
@@ -643,6 +662,13 @@ def run_app():
         default=None,
         help="optional task author")
     parser_comment.set_defaults(func=cmd_comment)
+
+    parser_log = subparsers.add_parser("log", help="log drawdown")
+    parser_log.add_argument(
+        "date", nargs="?",
+        type=int, default=None,
+        help="task month in the format 0222")
+    parser_log.set_defaults(func=cmd_log)
 
     args = parser.parse_args()
     logging.basicConfig(level=args.loglevel)

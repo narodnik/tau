@@ -507,7 +507,7 @@ def color_task(task):
     if task is None:
         return
     else:
-        color = Fore.MAGENTA + Style.BRIGHT
+        color = Fore.GREEN + Style.BRIGHT
         colored = color + str(task) + Style.RESET_ALL
         return colored
 

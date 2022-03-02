@@ -459,6 +459,9 @@ def cmd_list(args, settings):
 
     table = []
     for tk in tks:
+        id, title, project, assign, due, rank = (
+                tk.id, tk.title, tk.project, tk.assign, tk.due, tk.rank)
+
         ### Apply prefix filter if needed
         if args.project_prefix is not None:
             if (tk.project is None
@@ -479,29 +482,27 @@ def cmd_list(args, settings):
             assign = color_task(tk.assign)
             due = color_task(tk.due)
             rank = color_task(tk.rank)
-            table.append((id, title, project, assign, due, rank))
 
-        # Color rank in order of priority
-        if tk.rank is None:
-            table.append((tk.id, tk.title, tk.project, tk.assign, tk.due, tk.rank))
-        else: 
-            rank = color_rank(tk.rank, high_rank, low_rank, mean_rank)
-            table.append((tk.id, tk.title, tk.project, tk.assign, tk.due, rank))
+        rank = color_rank(tk.rank, high_rank, low_rank, mean_rank)
+        table.append((id, title, project, assign, due, rank))
 
     headers = ["ID", "Title", "Project", "Assigned", "Due", "Rank"]
     print(tabulate(table, headers=headers))
 
 def color_rank(rank, high_rank, low_rank, mean_rank):
-    if rank < mean_rank:
-        color = Fore.CYAN + Style.DIM
-    if rank > mean_rank:
-        color = Fore.CYAN
-    if rank == high_rank:
-        color = Fore.CYAN + Style.BRIGHT
-    if rank == low_rank: 
-        color = Fore.BLUE 
-    colored_rank = color + str(rank) + Style.RESET_ALL
-    return colored_rank
+    if rank is None:
+        return
+    else:
+        if rank < mean_rank:
+            color = Fore.CYAN + Style.DIM
+        if rank > mean_rank:
+            color = Fore.CYAN
+        if rank == high_rank:
+            color = Fore.CYAN + Style.BRIGHT
+        if rank == low_rank: 
+            color = Fore.BLUE 
+        colored_rank = color + str(rank) + Style.RESET_ALL
+        return colored_rank
 
 def color_task(task):
     if task is None:

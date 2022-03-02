@@ -248,11 +248,8 @@ class TaskInfo:
         self.events.append(event)
 
     def set_comment(self, comment, author):
-        logging.debug(f"{comment}")
         comment = Comment(comment, author)
-        logging.debug(f"{comment}")
         self.comments.append(comment)
-        logging.debug(f"{self.comments}")
 
     def get_state(self):
         if not self.events:
@@ -453,7 +450,6 @@ def cmd_list(args, settings):
     #   ... if tk.rank is not None
     ranks = [tk.rank for tk in tks if tk.rank is not None]
 
-    print(ranks)
     high_rank = max(ranks)
     low_rank = min(ranks)
     mean_rank = sum(ranks)/len(ranks)
@@ -513,8 +509,6 @@ def color_task(task):
         return colored
 
 def cmd_comment(args, settings):
-    #author = "roz"
-    logging.debug("comment command called")
     tk = load_task_by_id(args.id, settings)
     if tk is None:
         error(f"task ID {args.id} not found")

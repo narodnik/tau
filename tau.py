@@ -471,6 +471,18 @@ def cmd_list(args, settings):
         else:
             due = tk.due.strftime("%a %d %b")
 
+        # Apply color if task is started
+        state = tk.get_state()
+        if state == "start":
+            id = color_task(tk.id)
+            title = color_task(tk.title)
+            project = color_task(tk.project)
+            assign = color_task(tk.assign)
+            due = color_task(tk.due)
+            rank = color_task(tk.rank)
+            table.append((id, title, project, assign, due, rank))
+
+        # Color rank in order of priority
         if tk.rank is None:
             table.append((tk.id, tk.title, tk.project, tk.assign, tk.due, tk.rank))
         else: 
@@ -491,6 +503,14 @@ def color_rank(rank, high_rank, low_rank, mean_rank):
         color = Fore.BLUE + Style.DIM
     colored_rank = color + str(rank) + Style.RESET_ALL
     return colored_rank
+
+def color_task(task):
+    if task is None:
+        return
+    else:
+        color = Fore.MAGENTA + Style.BRIGHT
+        colored = color + str(task) + Style.RESET_ALL
+        return colored
 
 def cmd_comment(args, settings):
     #author = "roz"

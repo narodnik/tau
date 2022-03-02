@@ -451,8 +451,11 @@ def cmd_list(args, settings):
     ranks = [tk.rank for tk in tks if tk.rank is not None]
 
     high_rank = max(ranks)
+    logging.debug(f"high rank: {high_rank}")
     low_rank = min(ranks)
+    logging.debug(f"low rank: {low_rank}")
     mean_rank = sum(ranks)/len(ranks)
+    logging.debug(f"mean rank: {mean_rank}")
 
     table = []
     for tk in tks:
@@ -489,14 +492,14 @@ def cmd_list(args, settings):
     print(tabulate(table, headers=headers))
 
 def color_rank(rank, high_rank, low_rank, mean_rank):
-    if rank > low_rank < mean_rank:
-        color = Fore.CYAN
-    if rank < high_rank > mean_rank:
+    if rank < mean_rank:
+        color = Fore.CYAN + Style.DIM
+    if rank > mean_rank:
         color = Fore.CYAN
     if rank == high_rank:
         color = Fore.CYAN + Style.BRIGHT
     if rank == low_rank: 
-        color = Fore.BLUE + Style.DIM
+        color = Fore.BLUE 
     colored_rank = color + str(rank) + Style.RESET_ALL
     return colored_rank
 

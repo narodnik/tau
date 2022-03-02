@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import binascii
+import calendar
 import os
 import argparse
 import datetime
@@ -261,7 +262,6 @@ class TaskInfo:
         month_tks = MonthTasks.load_or_create(self.created_at, self.settings)
         month_tks.add(self.tk_hash())
         month_tks.save()    
-
 
     @staticmethod
     def data_path(settings, tk_hash):
@@ -574,7 +574,64 @@ def cmd_stop(args, settings):
     tk.save()
 
 def cmd_log(args, settings):
-    print(args.date)
+    if args.date is None:
+        date = datetime.datetime.now().date()
+    else:
+        month, year = int(args.date[:2]), int(args.date[2:])
+        year += 2000
+        date = datetime.date(day=1, month=month, year=year)
+
+    try:
+        month = MonthTasks.load(date, settings)
+    except FileNotFoundError:
+        error("month is not logged")
+
+    tks = month.objects()
+    days_this_month = calendar.monthrange(date.year, date.month)[1]
+
+    #projects = {}
+    #for tk in tks:
+    #    if tk.project is None:
+    #        continue
+
+    #    # Select the main project category
+    #    # For example crypto.zk becomes crypto
+    #    project = tk.project.split(".")[0]
+
+    #    if project not in projects:
+    #        projects[project] = [False] * days_this_month
+
+    #    task_log = [False] * days_this_month
+    #    for event in tk.events:
+    #        event_day = event.timestamp.date().day
+    #        assert event_day - 1 < len(task_log)
+    #        if event.action == "start":
+    #            for i in range(event_day - 1, days_this_month):
+    #                task_log[i] = True
+    #        elif event.action == "pause" or event.action == "stop":
+    #            # Begin from the next day
+    #            for i in range(event_day, days_this_month):
+    #                task_log[i] = False
+
+    #    # Merge both logs.
+    #    project_log = []
+    #    for project_day, task_day in zip(projects[project], task_log):
+    #        if project_day:
+    #            project_log.append(True)
+    #        elif task_day:
+    #            project_log.append(True)
+    #        # Both are false
+    #        else:
+    #            project_log.append(False)
+
+    #    projects[project] = project_log
+
+    #    print(tk.project)
+
+    table = []
+    for i in range(1, days_this_month + 1):
+        table.append((i, ))
+    print(tabulate(table))
 
 def run_app():
     parser = argparse.ArgumentParser(prog='tau',
@@ -684,7 +741,7 @@ def run_app():
     parser_log = subparsers.add_parser("log", help="log drawdown")
     parser_log.add_argument(
         "date", nargs="?",
-        type=int, default=None,
+        default=None,
         help="task month in the format 0222")
     parser_log.set_defaults(func=cmd_log)
 

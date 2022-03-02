@@ -480,7 +480,7 @@ def cmd_list(args, settings):
             title = color_task(tk.title)
             project = color_task(tk.project)
             assign = color_task(tk.assign)
-            due = color_task(tk.due)
+            due = color_task(due)
             rank = color_task(tk.rank)
 
         rank = color_rank(tk.rank, high_rank, low_rank, mean_rank)

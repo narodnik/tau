@@ -97,15 +97,9 @@ projects = [
         "df.crypto"
         ]
 
-years = [
-        "2020",
-        "2021",
-        "2022"
-        ]
-
 def random_date():
     day, month = random_number(), random_number()
-    year = int(random.choice(years))
+    year = 2021
     date = datetime.date(year, month, day)
     return date
 
@@ -114,19 +108,44 @@ def random_number():
 
 def create_task(ref_id, id, title, desc, assign, project,
         due, rank, created_at, settings):
-    task_info = tau.TaskInfo(ref_id, id, title, desc, assign,
+    tk = tau.TaskInfo(ref_id, id, title, desc, assign,
             project, due, rank, created_at, settings)
-    task_info.save()
-    task_info.activate()
-    logging.info(f"{task_info}")
+    tk.save()
+    tk.activate()
+    logging.info(f"{tk}")
+    return tk
+
+def get_next_states(current_state):
+    if current_state == "open":
+        next_states = ["start"] * 1 + ["open"] * 2
+    if current_state == "start":
+        next_states = ["start"] * 10 + ["pause"] * 10 + ["stop"] * 1
+    if current_state == "pause":
+        next_states = ["start"] * 20 + ["pause"] * 20 + ["stop"] * 1
+    if current_state == "stop":
+        next_states = ["stop"]
+    return next_states
+
+def get_values():
+    ref_id = tau.random_hex_string()
+    id = random_number()
+    title = random.choice(titles)
+    index = titles.index(title)
+    desc = descriptions[index]
+    assign = random.choice(assignee)
+    project = random.choice(projects)
+    due = random_date()
+    rank = random_number()
+    created_at = datetime.datetime.now()
+    settings = tau.Settings(config)
+    return (ref_id, id, title, index, desc, assign, project, due, rank,
+            created_at, settings)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='simulator',
         usage='%(prog)s [commands]',
         description="simulate fake tasks"
     )
-    parser.add_argument('integer', metavar='N', type=int, nargs='?',
-            help='define the number of fake tasks')
     parser.add_argument("-v", "--verbose",
             action="store_const",
             dest="loglevel", const=logging.DEBUG, default=logging.WARNING,
@@ -142,20 +161,17 @@ if __name__ == "__main__":
     config = tau.Config(config_path)
     config.load()
     
-    n_tasks = int(args.integer)
-    for i in range(n_tasks):
-        ref_id = tau.random_hex_string()
-        id = random_number()
-        title = random.choice(titles)
-        index = titles.index(title)
-        desc = descriptions[index]
-        assign = random.choice(assignee)
-        project = random.choice(projects)
-        due = random_date()
-        rank = random_number()
-        # TODO: fix this
-        created_at = datetime.datetime.now()
-        settings = tau.Settings(config)
-        create_task(ref_id, id, title, desc, assign, project,
+    current_state = "open"
+    created_at = 1001
+
+    for day_offset in range(1, 20):
+        (ref_id, id, title, index, desc, assign, project, due, rank, created_at,
+                settings) = get_values()
+
+        tk = create_task(ref_id, id, title, desc, assign, project,
             due, rank, created_at, settings)
 
+        next_states = get_next_states(current_state)
+        current_state = random.choice(next_states)
+        tk.set_state(current_state)
+        logging.info(f"{tk}")

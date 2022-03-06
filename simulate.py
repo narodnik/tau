@@ -125,11 +125,12 @@ if __name__ == "__main__":
         usage='%(prog)s [commands]',
         description="simulate fake tasks"
     )
+    parser.add_argument('integer', metavar='N', type=int, nargs='?',
+            help='define the number of fake tasks')
     parser.add_argument("-v", "--verbose",
             action="store_const",
             dest="loglevel", const=logging.DEBUG, default=logging.WARNING,
             help="increase output verbosity"),
-    subparsers = parser.add_subparsers()
     args = parser.parse_args()
     logging.basicConfig(level=args.loglevel)
 
@@ -141,19 +142,20 @@ if __name__ == "__main__":
     config = tau.Config(config_path)
     config.load()
     
-    ref_id = tau.random_hex_string()
-    id = random_number()
-    title = random.choice(titles)
-    index = titles.index(title)
-    desc = descriptions[index]
-    assign = random.choice(assignee)
-    project = random.choice(projects)
-    due = random_date()
-    rank = random_number()
-    # TODO: fix this
-    created_at = datetime.datetime.now()
-    settings = tau.Settings(config)
-    
-    create_task(ref_id, id, title, desc, assign, project,
+    n_tasks = int(args.integer)
+    for i in range(n_tasks):
+        ref_id = tau.random_hex_string()
+        id = random_number()
+        title = random.choice(titles)
+        index = titles.index(title)
+        desc = descriptions[index]
+        assign = random.choice(assignee)
+        project = random.choice(projects)
+        due = random_date()
+        rank = random_number()
+        # TODO: fix this
+        created_at = datetime.datetime.now()
+        settings = tau.Settings(config)
+        create_task(ref_id, id, title, desc, assign, project,
             due, rank, created_at, settings)
 
